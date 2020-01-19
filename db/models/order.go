@@ -2,31 +2,42 @@ package models
 
 import (
 	"time"
-)
-type Payment int
-const (
-	paid = iota
-	pending
-	failed
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func ReturnStatus(p Payment) String() string {
-	return [...]string{"paid", "pending", "failed"}[p]
+// Payment struct
+type Payment int
+
+/* Paid const
+Denied const
+Failed const
+*/
+const (
+	Paid Payment = iota
+	Denied
+	Failed
+)
+
+func (p Payment) String() string {
+	return [...]string{"Paid", "Denied", "Failed"}[p]
 }
+
 //Cake struct
-type Cake struct{
-	name string
-	price float64
+type Cake struct {
+	name     string
+	price    float64
 	quanitiy int
 	category string
 }
+
 //Order struct
 type Order struct {
-	CustomerName    string
-	CustomerEmail   string
-	CustomerPhone   string
-	DeliveryAddress string
-	Cakes []Cake
-	PaymentStatus ReturnStatus()
-	Createdat       time.Time
+	ID              primitive.ObjectID `json:"_id" bson:"_id"`
+	CustomerName    string             `json:"customerName" bson:"customerName"`
+	CustomerEmail   string             `json:"customerEmail" bson:"customerEmail"`
+	CustomerPhone   string             `json:"customerPhone" bson:"customerPhone"`
+	DeliveryAddress string             `json:"address" bson:"address"`
+	Cakes           []Cake             `json:"cakes" bson:"cakes"`
+	Createdat       time.Time          `json:"created_at" bson:"created_at"`
 }
