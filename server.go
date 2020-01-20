@@ -7,10 +7,10 @@ import (
 )
 
 func main() {
-	e := echo.New()
-	e.GET("/", func(c echo.Context) error {
+	mux := echo.New()
+	mux.GET("/", func(c echo.Context) error {
 		return c.String(http.StatusOK, "Hello, World!")
 	})
-	e.Logger.Fatal(e.Start(":1323"))
+	mux.Logger.Fatal(mux.Start(":1323"))
 
 }

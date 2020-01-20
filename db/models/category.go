@@ -10,5 +10,5 @@ import (
 type Category struct {
 	ID        primitive.ObjectID `json:"_id" bson:"_id"`
 	Name      string             `json:"name" bson:"name"`
-	createdAt time.Time          `json:"createdAt" bson:"createdAt"`
+	CreatedAt time.Time          `json:"createdAt" bson:"createdAt"`
 }

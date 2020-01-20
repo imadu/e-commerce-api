@@ -39,5 +39,6 @@ type Order struct {
 	CustomerPhone   string             `json:"customerPhone" bson:"customerPhone"`
 	DeliveryAddress string             `json:"address" bson:"address"`
 	Cakes           []Cake             `json:"cakes" bson:"cakes"`
+	PaymentStatus   Payment            `json:"paymentStatus" bson:"paymentStatus"`
 	Createdat       time.Time          `json:"created_at" bson:"created_at"`
 }

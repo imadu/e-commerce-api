@@ -206,6 +206,7 @@
   analyzer-version = 1
   input-imports = [
     "github.com/labstack/echo",
+    "go.mongodb.org/mongo-driver/bson/primitive",
     "go.mongodb.org/mongo-driver/mongo",
     "go.mongodb.org/mongo-driver/mongo/options",
   ]

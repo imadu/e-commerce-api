@@ -9,7 +9,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func initDB() (*mongo.Client, *context.Context) {
+//InitDB database connection
+func InitDB() *mongo.Client {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://imadu:default@12345@ds063789.mlab.com:63789/cakes-and-cream-go"))
@@ -17,5 +18,5 @@ func initDB() (*mongo.Client, *context.Context) {
 		log.Fatalf("could not connect to db")
 	}
 
-	return client, &ctx
+	return client
 }
