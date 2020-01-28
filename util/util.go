@@ -1,4 +1,4 @@
-package handlers
+package util
 
 import (
 	"net/http"
@@ -24,14 +24,16 @@ type ErrorResponse struct {
 	Error ErrorBody `json:"error"`
 }
 
-func sendSuccess(c echo.Context, data interface{}) error {
+//SendSuccess utility function
+func SendSuccess(c echo.Context, data interface{}) error {
 	s := Response{}
 	s.Status = "success"
 	s.Data = data
 	return c.JSON(http.StatusOK, s)
 }
 
-func sendError(c echo.Context, code string, message string, status string) error {
+//SendError utility function
+func SendError(c echo.Context, code string, message string, status string) error {
 	e := ErrorBody{}
 	e.Status = status
 	e.Code = code
@@ -42,6 +44,7 @@ func sendError(c echo.Context, code string, message string, status string) error
 
 }
 
-func sendData(c echo.Context, data interface{}) error {
+//SendData utility function
+func SendData(c echo.Context, data interface{}) error {
 	return c.JSON(http.StatusOK, data)
 }

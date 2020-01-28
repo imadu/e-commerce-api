@@ -1,4 +1,4 @@
-package models
+package products
 
 import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -17,4 +17,5 @@ type Product struct {
 	Name      string             `json:"name" bson:"name"`
 	Price     float64            `json:"price" bson:"price"`
 	Attribute []Attribute        `json:"attribute" bson:"attribute"`
+	Category  string             `json:"category" bson:"category"`
 }

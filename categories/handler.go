@@ -1,51 +1,51 @@
-package handlers
+package categories
 
 import (
 	"context"
 	"net/http"
 	"time"
 
+	"github.com/imadu/e-commerce-api/db"
+
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
-	"github.com/imadu/e-commerce-api/db/models"
+	"github.com/imadu/e-commerce-api/util"
 	"github.com/labstack/echo"
 	"github.com/labstack/gommon/log"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var client *mongo.Client
-var categoryCollection = client.Database("cakes-and-cream-go").Collection("categories")
+var categoryCollection = db.Client.Database("cakes-and-cream-go").Collection("categories")
 
 // CreateNewCategory function
 func CreateNewCategory(c echo.Context) error {
-	r := new(models.Category)
+	r := new(Category)
 	if err := c.Bind(r); err != nil {
 		log.Errorf("Could not bind request to struct: %+v", err)
-		return sendError(c, "", "", "")
+		return util.SendError(c, "", "", "")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	result, _ := categoryCollection.InsertOne(ctx, r)
-	return sendSuccess(c, result.InsertedID)
+	return util.SendSuccess(c, result.InsertedID)
 }
 
 // GetCategories Function
 func GetCategories(c echo.Context) error {
 	findOptions := options.Find()
 	findOptions.SetLimit(10)
-	var categories []*models.Category
+	var categories []*Category
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	result, err := categoryCollection.Find(ctx, bson.D{{}}, findOptions)
 	if err != nil {
 		c.Response().WriteHeader(http.StatusNotFound)
-		return sendError(c, "", "Categories do not exist", "")
+		return util.SendError(c, "", "Categories do not exist", "")
 	}
 
 	for result.Next(ctx) {
-		var category models.Category
+		var category Category
 		err := result.Decode(&category)
 		if err != nil {
 			log.Errorf("something went wrong", err)
@@ -58,28 +58,28 @@ func GetCategories(c echo.Context) error {
 	}
 	result.Close(ctx)
 
-	return sendData(c, categories)
+	return util.SendData(c, categories)
 }
 
 // GetCategory function
 func GetCategory(c echo.Context) error {
 	id := c.Param("id")
-	var result models.Category
+	var result Category
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	err := categoryCollection.FindOne(ctx, id).Decode(&result)
 	if err != nil {
 		c.Response().WriteHeader(http.StatusNotFound)
-		return sendError(c, "404", "Category do not exist", "failed")
+		return util.SendError(c, "404", "Category do not exist", "failed")
 	}
-	return sendData(c, result)
+	return util.SendData(c, result)
 }
 
 //UpdateCategory function
 func UpdateCategory(c echo.Context) error {
 	id := c.Param("id")
 	// body is supposed to be of type models.Category to that we can pass it to the update variable
-	body := new(models.Category)
+	body := new(Category)
 	filter := bson.D{primitive.E{Key: "_id", Value: id}}
 	update := bson.D{primitive.E{Key: "name", Value: body.Name}}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -87,9 +87,9 @@ func UpdateCategory(c echo.Context) error {
 	result, err := categoryCollection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		c.Response().WriteHeader(http.StatusBadRequest)
-		return sendError(c, "400", "could not update category", "failed")
+		return util.SendError(c, "400", "could not update category", "failed")
 	}
-	return sendSuccess(c, result.MatchedCount)
+	return util.SendSuccess(c, result.MatchedCount)
 }
 
 // DeleteCategory function
@@ -101,7 +101,7 @@ func DeleteCategory(c echo.Context) error {
 	result, err := categoryCollection.DeleteOne(ctx, filter)
 	if err != nil {
 		c.Response().WriteHeader(http.StatusInternalServerError)
-		return sendError(c, "500", "could not delete", "failed")
+		return util.SendError(c, "500", "could not delete", "failed")
 	}
-	return sendSuccess(c, result.DeletedCount)
+	return util.SendSuccess(c, result.DeletedCount)
 }

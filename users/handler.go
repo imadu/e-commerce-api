@@ -1,4 +1,4 @@
-package handlers
+package users
 
 import (
 	"context"
@@ -10,14 +10,15 @@ import (
 
 	"github.com/labstack/echo"
 
-	"github.com/imadu/e-commerce-api/db/models"
+	"github.com/imadu/e-commerce-api/db"
+	"github.com/imadu/e-commerce-api/util"
 	"github.com/labstack/gommon/log"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var userCollection = client.Database("cakes-and-cream-go").Collection("users")
+var userCollection = db.Client.Database("cakes-and-cream-go").Collection("users")
 
 func hashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 10)
@@ -29,8 +30,8 @@ func checkPasswordHash(password, hash string) bool {
 	return err == nil
 }
 
-func getUser(username string) models.User {
-	var result models.User
+func getUser(username string) User {
+	var result User
 	filter := bson.D{primitive.E{Key: "username", Value: username}}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -43,7 +44,7 @@ func getUser(username string) models.User {
 
 // GetUser returns the user by id
 func GetUser(c echo.Context) error {
-	var result models.User
+	var result User
 	id := c.Param("id")
 	filter := bson.D{primitive.E{Key: "_id", Value: id}}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -51,10 +52,10 @@ func GetUser(c echo.Context) error {
 	err := userCollection.FindOne(ctx, filter).Decode(&result)
 	if err != nil {
 		c.Response().WriteHeader(http.StatusNotFound)
-		return sendError(c, "404", "User does not exist", "failed")
+		return util.SendError(c, "404", "User does not exist", "failed")
 	}
 
-	return sendData(c, result)
+	return util.SendData(c, result)
 }
 
 // GetUsers returns all the users
@@ -70,18 +71,18 @@ func GetUsers(c echo.Context) error {
 	findOptions.SetLimit(limit)
 	findOptions.SetSkip(page * limit)
 
-	var results []*models.User
+	var results []*User
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	cur, err := userCollection.Find(ctx, bson.D{{}}, findOptions)
 	if err != nil {
 		c.Response().WriteHeader(http.StatusNotFound)
-		return sendError(c, "500", "could not find users", "failed")
+		return util.SendError(c, "500", "could not find users", "failed")
 	}
 
 	for cur.Next(ctx) {
-		var user models.User
+		var user User
 		err := cur.Decode(&user)
 		if err != nil {
 			log.Errorf("something went wrong", err)
@@ -93,7 +94,7 @@ func GetUsers(c echo.Context) error {
 		log.Fatal(err)
 	}
 	cur.Close(ctx)
-	return sendData(c, results)
+	return util.SendData(c, results)
 
 }
 
@@ -105,7 +106,7 @@ func CreateUser(c echo.Context) error {
 	// check if the username exists
 	nameExists := getUser(name)
 	if nameExists.Username == name {
-		return sendError(c, "400", "username already exists", "failed")
+		return util.SendError(c, "400", "username already exists", "failed")
 	}
 
 	hashedPassword, err := hashPassword(password)
@@ -113,23 +114,23 @@ func CreateUser(c echo.Context) error {
 		log.Fatalf("could not hash password", err)
 	}
 
-	u := new(models.User)
+	u := new(User)
 	u.Password = hashedPassword
 	if err = c.Bind(u); err != nil {
 		log.Errorf("Could not bind request to struct: %+v", err)
-		return sendError(c, "500", "something went wrong", "failed")
+		return util.SendError(c, "500", "something went wrong", "failed")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	result, _ := userCollection.InsertOne(ctx, u)
-	return sendSuccess(c, result.InsertedID)
+	return util.SendSuccess(c, result.InsertedID)
 
 }
 
 // UpdateUser updates the user
 func UpdateUser(c echo.Context) error {
 	id := c.Param("id")
-	body := new(models.User)
+	body := new(User)
 	filter := bson.D{primitive.E{Key: "_id", Value: id}}
 	update := bson.D{primitive.E{Key: "firstName", Value: body.Firstname}, primitive.E{Key: "lastName", Value: body.Lastname}, primitive.E{Key: "email", Value: body.Email}, primitive.E{Key: "phoneNumber", Value: body.Phonenumber}}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -137,10 +138,10 @@ func UpdateUser(c echo.Context) error {
 	result, err := userCollection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		c.Response().WriteHeader(http.StatusBadRequest)
-		return sendError(c, "400", "could not update category", "failed")
+		return util.SendError(c, "400", "could not update category", "failed")
 	}
 
-	return sendSuccess(c, result.MatchedCount)
+	return util.SendSuccess(c, result.MatchedCount)
 }
 
 // DeleteUser deletes a user
@@ -152,8 +153,8 @@ func DeleteUser(c echo.Context) error {
 	result, err := userCollection.DeleteOne(ctx, filter)
 	if err != nil {
 		c.Response().WriteHeader(http.StatusInternalServerError)
-		return sendError(c, "500", "could not delete %+v", "failed")
+		return util.SendError(c, "500", "could not delete %+v", "failed")
 	}
 
-	return sendSuccess(c, result.DeletedCount)
+	return util.SendSuccess(c, result.DeletedCount)
 }
