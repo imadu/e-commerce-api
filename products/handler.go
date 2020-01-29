@@ -6,11 +6,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/imadu/e-commerce-api/db"
-	"github.com/imadu/e-commerce-api/util"
 	"github.com/labstack/echo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+
+	"github.com/imadu/cakes-and-cream/db"
+	"github.com/imadu/cakes-and-cream/util"
 )
 
 var productCollection = db.Client.Database("cakes-and-cream-go").Collection("products")
@@ -43,5 +44,28 @@ func GetProduct(c echo.Context) error {
 	}
 
 	return util.SendData(c, result)
+
+}
+
+//Create creates a product
+func Create(c echo.Context) error {
+	name := c.FormValue("name")
+
+	nameExists := getName(name)
+
+	if nameExists.Name == name {
+		return util.SendError(c, "400", "duplicate names cannot exist", "failed")
+	}
+
+	p := new(Product)
+	if err := c.Bind(p); err != nil {
+		log.Fatalf("Could not bind request to struct: %+v", err)
+		return util.SendError(c, "500", "something went wrong", "failed")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	result, _ := productCollection.InsertOne(ctx, p)
+
+	return util.SendSuccess(c, result.InsertedID)
 
 }

@@ -21,7 +21,7 @@ func InitDB() *mongo.Client {
 		var err error
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		Client, err = mongo.Connect(ctx, options.Client().ApplyURI("mongodb://imadu:default@12345@ds063789.mlab.com:63789/cakes-and-cream-go"))
+		Client, err = mongo.Connect(ctx, options.Client().ApplyURI("mongodb://imadu:default123456@ds063789.mlab.com:63789/cakes-and-cream-go"))
 		if err != nil {
 			log.Fatalf("could not connect to db")
 		}

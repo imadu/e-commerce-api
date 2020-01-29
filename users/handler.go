@@ -6,16 +6,15 @@ import (
 	"strconv"
 	"time"
 
-	"golang.org/x/crypto/bcrypt"
-
 	"github.com/labstack/echo"
-
-	"github.com/imadu/e-commerce-api/db"
-	"github.com/imadu/e-commerce-api/util"
 	"github.com/labstack/gommon/log"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"golang.org/x/crypto/bcrypt"
+
+	"github.com/imadu/cakes-and-cream/db"
+	"github.com/imadu/cakes-and-cream/util"
 )
 
 var userCollection = db.Client.Database("cakes-and-cream-go").Collection("users")
@@ -116,7 +115,7 @@ func CreateUser(c echo.Context) error {
 
 	u := new(User)
 	u.Password = hashedPassword
-	if err = c.Bind(u); err != nil {
+	if err := c.Bind(u); err != nil {
 		log.Errorf("Could not bind request to struct: %+v", err)
 		return util.SendError(c, "500", "something went wrong", "failed")
 	}
