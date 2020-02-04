@@ -4,17 +4,29 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"os"
+	"strconv"
 	"time"
 
+	"github.com/imadu/e-commerce-api/db"
+	"github.com/imadu/e-commerce-api/util"
 	"github.com/labstack/echo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-
-	"github.com/imadu/cakes-and-cream/db"
-	"github.com/imadu/cakes-and-cream/util"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var productCollection = db.Client.Database("cakes-and-cream-go").Collection("products")
+//Query struct
+type Query struct {
+	Name     string
+	Category string
+	Limit    int64
+	Page     int64
+}
+
+var dbName = os.Getenv("DB_NAME")
+
+var productCollection = db.Client.Database(dbName).Collection("products")
 
 func getName(name string) Product {
 	var result Product
@@ -44,6 +56,26 @@ func GetProduct(c echo.Context) error {
 	}
 
 	return util.SendData(c, result)
+
+}
+
+//GetProducts returns a list of products based on the query parameters
+func GetProducts(c echo.Context) error {
+	var q Query
+	q.Limit, _ = strconv.ParseInt(c.QueryParam("limit"), 10, 64)
+	q.Name = c.QueryParam("name")
+	q.Page, _ = strconv.ParseInt(c.QueryParam("page"), 10, 64)
+	q.Category = c.QueryParam("category")
+
+	findOptions := options.Find()
+	findOptions.SetLimit(q.Limit)
+	findOptions.SetSkip(q.Page * q.Limit)
+
+	var results []*Product
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	cur, err := productCollection.Find(ctx, bson.D{{q}}, findOptions)
 
 }
 

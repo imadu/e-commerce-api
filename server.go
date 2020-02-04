@@ -4,10 +4,9 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/subosito/gotenv"
+	"github.com/imadu/e-commerce-api/db"
 	"github.com/labstack/echo"
-
-	"github.com/imadu/cakes-and-cream/db"
+	"github.com/subosito/gotenv"
 )
 
 func main() {

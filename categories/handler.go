@@ -5,14 +5,13 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/imadu/e-commerce-api/db"
+	"github.com/imadu/e-commerce-api/util"
 	"github.com/labstack/echo"
 	"github.com/labstack/gommon/log"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
-
-	"github.com/imadu/cakes-and-cream/db"
-	"github.com/imadu/cakes-and-cream/util"
 )
 
 var categoryCollection = db.Client.Database("cakes-and-cream-go").Collection("categories")
