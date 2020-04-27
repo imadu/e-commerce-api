@@ -2,9 +2,11 @@ package products
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"reflect"
 	"strconv"
 	"time"
 
@@ -13,6 +15,7 @@ import (
 	"github.com/labstack/echo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -63,9 +66,7 @@ func GetProduct(c echo.Context) error {
 func GetProducts(c echo.Context) error {
 	var q Query
 	q.Limit, _ = strconv.ParseInt(c.QueryParam("limit"), 10, 64)
-	q.Name = c.QueryParam("name")
 	q.Page, _ = strconv.ParseInt(c.QueryParam("page"), 10, 64)
-	q.Category = c.QueryParam("category")
 
 	findOptions := options.Find()
 	findOptions.SetLimit(q.Limit)
@@ -75,26 +76,53 @@ func GetProducts(c echo.Context) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	cur, err := productCollection.Find(ctx, bson.D{{q}}, findOptions)
+	cur, err := productCollection.Find(ctx, bson.D{{}}, findOptions)
+	if err != nil {
+		log.Fatalf("Could not bind request to struct: %+v", err)
+		return util.SendError(c, "500", "something went wrong", "failed")
+	}
+
+	for cur.Next(ctx) {
+		var product Product
+		err := cur.Decode(&product)
+		if err != nil {
+			log.Fatal("something went wrong ", err)
+		}
+		results = append(results, &product)
+	}
+
+	if err := cur.Err(); err != nil {
+		log.Fatal(err)
+	}
+	cur.Close(ctx)
+	return util.SendData(c, results)
 
 }
 
 //Create creates a product
 func Create(c echo.Context) error {
-	name := c.FormValue("name")
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	mod := mongo.IndexModel{
+		Keys: bson.M{
+			"name": -1,
+		}, Options: options.Index().SetUnique(true),
+	}
 
-	nameExists := getName(name)
-
-	if nameExists.Name == name {
-		return util.SendError(c, "400", "duplicate names cannot exist", "failed")
+	ind, err := productCollection.Indexes().CreateOne(ctx, mod)
+	if err != nil {
+		log.Fatal("Indexes().CreateOne() ERROR:", err)
+	} else {
+		// API call returns string of the index name
+		fmt.Println("CreateOne() index:", ind)
+		fmt.Println("CreateOne() type:", reflect.TypeOf(ind))
 	}
 
 	p := new(Product)
 	if err := c.Bind(p); err != nil {
 		log.Fatalf("Could not bind request to struct: %+v", err)
+		defer cancel()
 		return util.SendError(c, "500", "something went wrong", "failed")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	result, _ := productCollection.InsertOne(ctx, p)
 

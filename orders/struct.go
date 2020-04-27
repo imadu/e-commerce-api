@@ -34,11 +34,11 @@ type Cake struct {
 //Order struct
 type Order struct {
 	ID              primitive.ObjectID `json:"_id" bson:"_id"`
-	CustomerName    string             `json:"customerName" bson:"customerName"`
-	CustomerEmail   string             `json:"customerEmail" bson:"customerEmail"`
-	CustomerPhone   string             `json:"customerPhone" bson:"customerPhone"`
+	CustomerName    string             `json:"customer_name" bson:"customer_name"`
+	CustomerEmail   string             `json:"customer_email" bson:"customer_email"`
+	CustomerPhone   string             `json:"customer_phone" bson:"customer_phone"`
 	DeliveryAddress string             `json:"address" bson:"address"`
 	Cakes           []Cake             `json:"cakes" bson:"cakes"`
-	PaymentStatus   Payment            `json:"paymentStatus" bson:"paymentStatus"`
-	Createdat       time.Time          `json:"created_at" bson:"created_at"`
+	PaymentStatus   Payment            `json:"payment_status" bson:"payment_status"`
+	CreatedAt       time.Time          `json:"created_at" bson:"created_at"`
 }

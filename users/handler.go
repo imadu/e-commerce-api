@@ -2,8 +2,10 @@ package users
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
+	"reflect"
 	"strconv"
 	"time"
 
@@ -13,6 +15,7 @@ import (
 	"github.com/labstack/gommon/log"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -43,7 +46,7 @@ func getUser(username string) User {
 	return result
 }
 
-// GetUser returns the user by id
+//GetUser returns the user by id
 func GetUser(c echo.Context) error {
 	var result User
 	id := c.Param("id")
@@ -101,13 +104,21 @@ func GetUsers(c echo.Context) error {
 
 // CreateUser creates a new user
 func CreateUser(c echo.Context) error {
-	name := c.FormValue("username")
 	password := c.FormValue("password")
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	mod := mongo.IndexModel{
+		Keys: bson.M{
+			"username": -1,
+		}, Options: options.Index().SetUnique(true),
+	}
 
-	// check if the username exists
-	nameExists := getUser(name)
-	if nameExists.Username == name {
-		return util.SendError(c, "400", "username already exists", "failed")
+	ind, err := userCollection.Indexes().CreateOne(ctx, mod)
+	if err != nil {
+		log.Fatalf("Indexes().CreateOne() ERROR:", err)
+	} else {
+		// API call returns string of the index name
+		fmt.Println("CreateOne() index:", ind)
+		fmt.Println("CreateOne() type:", reflect.TypeOf(ind))
 	}
 
 	hashedPassword, err := hashPassword(password)
@@ -119,9 +130,9 @@ func CreateUser(c echo.Context) error {
 	u.Password = hashedPassword
 	if err := c.Bind(u); err != nil {
 		log.Errorf("Could not bind request to struct: %+v", err)
+		defer cancel()
 		return util.SendError(c, "500", "something went wrong", "failed")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	result, _ := userCollection.InsertOne(ctx, u)
 	return util.SendSuccess(c, result.InsertedID)
