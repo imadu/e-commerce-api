@@ -3,6 +3,7 @@ package orders
 import (
 	"time"
 
+	"github.com/imadu/e-commerce-api/products"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -23,14 +24,6 @@ func (p Payment) String() string {
 	return [...]string{"Paid", "Denied", "Failed"}[p]
 }
 
-//Cake struct
-type Cake struct {
-	name     string
-	price    float64
-	quanitiy int
-	category string
-}
-
 //Order struct
 type Order struct {
 	ID              primitive.ObjectID `json:"_id" bson:"_id"`
@@ -38,7 +31,8 @@ type Order struct {
 	CustomerEmail   string             `json:"customer_email" bson:"customer_email"`
 	CustomerPhone   string             `json:"customer_phone" bson:"customer_phone"`
 	DeliveryAddress string             `json:"address" bson:"address"`
-	Cakes           []Cake             `json:"cakes" bson:"cakes"`
+	Product         []products.Product `json:"product" bson:"product"`
+	Reference       string             `json:"reference" bson:"reference"`
 	PaymentStatus   Payment            `json:"payment_status" bson:"payment_status"`
 	CreatedAt       time.Time          `json:"created_at" bson:"created_at"`
 }
