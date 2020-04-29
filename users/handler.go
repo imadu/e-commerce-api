@@ -1,148 +1,88 @@
 package users
 
-// func hashPassword(password string) (string, error) {
-// 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 10)
-// 	return string(bytes), err
-// }
+import (
+	"log"
+	"strconv"
 
-// func checkPasswordHash(password, hash string) bool {
-// 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
-// 	return err == nil
-// }
+	"github.com/imadu/e-commerce-api/util"
+	"github.com/labstack/echo"
+)
 
-// func getUser(username string) User {
-// 	var result User
-// 	filter := bson.D{primitive.E{Key: "username", Value: username}}
-// 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-// 	defer cancel()
-// 	err := userCollection.FindOne(ctx, filter).Decode(&result)
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-// 	return result
-// }
+//GetUserID returns the user by id
+func GetUserID(context echo.Context) error {
+	id := context.Param("id")
 
-//GetUser returns the user by id
-// func GetUser(c echo.Context) error {
-// 	var result User
-// 	id := c.Param("id")
-// 	filter := bson.D{primitive.E{Key: "_id", Value: id}}
-// 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-// 	defer cancel()
-// 	err := userCollection.FindOne(ctx, filter).Decode(&result)
-// 	if err != nil {
-// 		c.Response().WriteHeader(http.StatusNotFound)
-// 		return util.SendError(c, "404", "User does not exist", "failed")
-// 	}
+	user, err := GetUser(id)
+	if err != nil {
+		log.Fatal(err)
+		return util.SendError(context, "failed", "something went wrong", "400")
+	}
+	return util.SendData(context, user)
 
-// 	return util.SendData(c, result)
-// }
+}
 
-// GetUsers returns all the users
-// func GetUsers(c echo.Context) error {
-// 	p := c.QueryParam("page")
-// 	l := c.QueryParam("limit")
+// GetAllUsers returns all the users
+func GetAllUsers(context echo.Context) error {
+	limit, _ := strconv.ParseInt(context.QueryParam("limit"), 10, 64)
+	size, _ := strconv.ParseInt(context.QueryParam("size"), 10, 64)
 
-// 	page, _ := strconv.ParseInt(p, 10, 64)
+	users, err := GetUsers(limit, size)
+	if err != nil {
+		log.Fatal(err)
+		return util.SendError(context, "failed", "something went wrong", "500")
+	}
+	return util.SendData(context, users)
+}
 
-// 	limit, _ := strconv.ParseInt(l, 10, 64)
+// CreateNewUser creates a new user
+func CreateNewUser(context echo.Context) error {
+	user := new(User)
+	if err := context.Bind(user); err != nil {
+		log.Fatalf("Could not bind request to struct: %+v", err)
+		return util.SendError(context, "", "", "")
+	}
 
-// 	findOptions := options.Find()
-// 	findOptions.SetLimit(limit)
-// 	findOptions.SetSkip(page * limit)
+	NewUser, err := CreateUser(*user)
 
-// 	var results []*User
-// 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-// 	defer cancel()
+	if err != nil {
+		log.Fatalf("Could not bind request to struct: %+v", err)
+		return util.SendError(context, "", "", "")
+	}
 
-// 	cur, err := userCollection.Find(ctx, bson.D{{}}, findOptions)
-// 	if err != nil {
-// 		c.Response().WriteHeader(http.StatusNotFound)
-// 		return util.SendError(c, "500", "could not find users", "failed")
-// 	}
+	return util.SendData(context, NewUser)
 
-// 	for cur.Next(ctx) {
-// 		var user User
-// 		err := cur.Decode(&user)
-// 		if err != nil {
-// 			log.Errorf("something went wrong", err)
-// 		}
-// 		results = append(results, &user)
-// 	}
+}
 
-// 	if err := cur.Err(); err != nil {
-// 		log.Fatal(err)
-// 	}
-// 	cur.Close(ctx)
-// 	return util.SendData(c, results)
+//UpdateUserDetails update a user based on id
+func UpdateUserDetails(context echo.Context) error {
+	id := context.Param("id")
+	user := new(User)
+	if err := context.Bind(user); err != nil {
+		log.Fatalf("Could not bind request to struct: %+v", err)
+		return util.SendError(context, "", "", "")
+	}
 
-// }
+	UpdatedUser, err := UpdateUser(id, *user)
 
-// CreateUser creates a new user
-// func CreateUser(c echo.Context) error {
-// 	password := c.FormValue("password")
-// 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-// 	mod := mongo.IndexModel{
-// 		Keys: bson.M{
-// 			"username": -1,
-// 		}, Options: options.Index().SetUnique(true),
-// 	}
+	if err != nil {
+		log.Fatalf("Could not bind request to struct: %+v", err)
+		return util.SendError(context, "", "", "")
+	}
 
-// 	ind, err := userCollection.Indexes().CreateOne(ctx, mod)
-// 	if err != nil {
-// 		log.Fatalf("Indexes().CreateOne() ERROR:", err)
-// 	} else {
-// 		// API call returns string of the index name
-// 		fmt.Println("CreateOne() index:", ind)
-// 		fmt.Println("CreateOne() type:", reflect.TypeOf(ind))
-// 	}
+	return util.SendData(context, UpdatedUser)
 
-// 	hashedPassword, err := hashPassword(password)
-// 	if err != nil {
-// 		log.Fatalf("could not hash password", err)
-// 	}
+}
 
-// 	u := new(User)
-// 	u.Password = hashedPassword
-// 	if err := c.Bind(u); err != nil {
-// 		log.Errorf("Could not bind request to struct: %+v", err)
-// 		defer cancel()
-// 		return util.SendError(c, "500", "something went wrong", "failed")
-// 	}
-// 	defer cancel()
-// 	result, _ := userCollection.InsertOne(ctx, u)
-// 	return util.SendSuccess(c, result.InsertedID)
+// DeleteUserAccount deletes a user
+func DeleteUserAccount(context echo.Context) error {
+	id := context.Param("id")
 
-// }
+	DeletedID, err := DeleteUser(id)
+	if err != nil {
+		log.Fatalf("Could not bind request to struct: %+v", err)
+		return util.SendError(context, "", "", "")
+	}
 
-// UpdateUser updates the user
-// func UpdateUser(c echo.Context) error {
-// 	id := c.Param("id")
-// 	body := new(User)
-// 	filter := bson.D{primitive.E{Key: "_id", Value: id}}
-// 	update := bson.D{primitive.E{Key: "firstName", Value: body.Firstname}, primitive.E{Key: "lastName", Value: body.Lastname}, primitive.E{Key: "email", Value: body.Email}, primitive.E{Key: "phoneNumber", Value: body.Phonenumber}}
-// 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-// 	defer cancel()
-// 	result, err := userCollection.UpdateOne(ctx, filter, update)
-// 	if err != nil {
-// 		c.Response().WriteHeader(http.StatusBadRequest)
-// 		return util.SendError(c, "400", "could not update category", "failed")
-// 	}
+	return util.SendSuccess(context, DeletedID)
 
-// 	return util.SendSuccess(c, result.MatchedCount)
-// }
-
-// DeleteUser deletes a user
-// func DeleteUser(c echo.Context) error {
-// 	id := c.Param("id")
-// 	filter := bson.D{primitive.E{Key: "_id", Value: id}}
-// 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-// 	defer cancel()
-// 	result, err := userCollection.DeleteOne(ctx, filter)
-// 	if err != nil {
-// 		c.Response().WriteHeader(http.StatusInternalServerError)
-// 		return util.SendError(c, "500", "could not delete %+v", "failed")
-// 	}
-
-// 	return util.SendSuccess(c, result.DeletedCount)
-// }
+}

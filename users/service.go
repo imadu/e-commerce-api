@@ -29,7 +29,7 @@ func checkPasswordHash(password, hash string) bool {
 }
 
 //CreateUser creates a user
-func CreateUser(u User) (*mongo.InsertOneResult, error) {
+func CreateUser(user User) (*mongo.InsertOneResult, error) {
 	mod := mongo.IndexModel{
 		Keys: bson.M{
 			"username": -1,
@@ -41,12 +41,12 @@ func CreateUser(u User) (*mongo.InsertOneResult, error) {
 		return nil, err
 	}
 
-	password, _ := hashPassword(u.Password)
+	password, _ := hashPassword(user.Password)
 
-	u.Password = password
+	user.Password = password
 
 	defer cancel()
-	result, _ := userCollection.InsertOne(ctx, u)
+	result, _ := userCollection.InsertOne(ctx, user)
 
 	return result, nil
 
@@ -82,6 +82,13 @@ func GetUsername(username string) (User, error) {
 
 //GetUsers returns the list of users
 func GetUsers(limit int64, page int64) ([]*User, error) {
+	if limit == 0 {
+		limit = 10.0
+	}
+
+	if page == 0 {
+		page = 1.0
+	}
 	var results []*User
 	findOptions := options.Find()
 	findOptions.SetLimit(limit)
@@ -112,13 +119,13 @@ func GetUsers(limit int64, page int64) ([]*User, error) {
 }
 
 //UpdateUser updates a user by id
-func UpdateUser(id string, u User) (*mongo.UpdateResult, error) {
+func UpdateUser(id string, user User) (*mongo.UpdateResult, error) {
 	filter := bson.M{"_id": bson.M{"$eq": id}}
 	update := bson.M{"$set": bson.M{
-		"first_name":   u.Firstname,
-		"last_name":    u.Lastname,
-		"Phone_number": u.Phonenumber,
-		"email":        u.Email,
+		"first_name":   user.Firstname,
+		"last_name":    user.Lastname,
+		"Phone_number": user.Phonenumber,
+		"email":        user.Email,
 	}}
 
 	defer cancel()

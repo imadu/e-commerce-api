@@ -32,6 +32,36 @@ func GetProduct(id string) (Product, error) {
 
 }
 
+//GetCategories lists the products according to a category
+func GetCategories(limit int64, page int64, query string) ([]*Product, error) {
+	var result []*Product
+	findOptions := options.Find()
+	findOptions.SetLimit(limit)
+	findOptions.SetSkip(page * limit)
+
+	defer cancel()
+	cur, err := productCollection.Find(ctx, bson.M{"category": bson.M{"$eq": query}}, findOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	for cur.Next(ctx) {
+		var product Product
+		err := cur.Decode(&product)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, &product)
+	}
+
+	if err := cur.Err(); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+
+}
+
 //GetProducts returns a array of the products
 func GetProducts(limit int64, page int64) ([]*Product, error) {
 	var result []*Product

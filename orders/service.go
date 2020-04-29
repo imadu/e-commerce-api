@@ -17,6 +17,25 @@ var orderCollection = db.Client.Database(dbName).Collection("orders")
 
 var ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
 
+func paymentStatus(p Payment) string {
+	return [...]string{"Paid", "Denied", "Failed"}[p]
+}
+
+//GetReference returns an order details by the reference id
+func GetReference(reference string) (Order, error) {
+	var order Order
+	filter := bson.M{"reference": bson.M{"$eq": reference}}
+
+	defer cancel()
+	err := orderCollection.FindOne(ctx, filter).Decode(&order)
+
+	if err != nil {
+		return order, err
+	}
+	return order, nil
+
+}
+
 //GetOrder returns an order by id
 func GetOrder(id string) (Order, error) {
 	var result Order
@@ -32,7 +51,7 @@ func GetOrder(id string) (Order, error) {
 }
 
 //GetOrders returns a list of orders
-func GetOrders(limit int64, page int64, q Order) ([]*Order, error) {
+func GetOrders(limit int64, page int64) ([]*Order, error) {
 	var result []*Order
 	findOptions := options.Find()
 	findOptions.SetLimit(limit)
@@ -60,10 +79,10 @@ func GetOrders(limit int64, page int64, q Order) ([]*Order, error) {
 }
 
 //Create makes an order
-func Create(o Order) (*mongo.InsertOneResult, error) {
+func Create(order Order) (*mongo.InsertOneResult, error) {
 	defer cancel()
 
-	result, err := orderCollection.InsertOne(ctx, o)
+	result, err := orderCollection.InsertOne(ctx, order)
 
 	if err != nil {
 		return nil, err
@@ -71,4 +90,38 @@ func Create(o Order) (*mongo.InsertOneResult, error) {
 
 	return result, err
 
+}
+
+//UpdateOrder update order information
+func UpdateOrder(id string, order Order) (*mongo.UpdateResult, error) {
+	filter := bson.M{"_id": bson.M{"$eq": id}}
+	update := bson.M{"$set": bson.M{
+		"customer_email": order.CustomerEmail,
+		"customer_phone": order.CustomerPhone,
+		"address":        order.DeliveryAddress,
+		"product":        order.Product,
+	}}
+
+	defer cancel()
+	result, err := orderCollection.UpdateOne(ctx, filter, update)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+
+}
+
+//DeleteOrder delets an order based on the order id
+func DeleteOrder(id string) (*mongo.DeleteResult, error) {
+	filter := bson.M{"_id": bson.M{"$eq": id}}
+
+	defer cancel()
+	result, err := orderCollection.DeleteOne(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }

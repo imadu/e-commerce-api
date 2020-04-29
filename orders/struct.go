@@ -20,10 +20,6 @@ const (
 	Failed
 )
 
-func (p Payment) String() string {
-	return [...]string{"Paid", "Denied", "Failed"}[p]
-}
-
 //Order struct
 type Order struct {
 	ID              primitive.ObjectID `json:"_id" bson:"_id"`
